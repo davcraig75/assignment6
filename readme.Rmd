@@ -1,0 +1,188 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+
+# Please deposit as `assignment6` as a Readme.Rmd file.
+
+This homework will generally follow: https://sites.usc.edu/translationalgenomics/learning-r/data-wrangling/
+
+## Descriptive Statistics
+
+### Getting Dataset 1
+
+```{r}
+clinical_info <- read.csv('trgn510/trgn599.clinical.tsv', header=TRUE, sep="\t")
+rna <- read.csv('trgn510/trgn599.rna.tsv', header=TRUE, sep="\t")
+```
+
+
+## Mean, etc
+
+We can caculate the mean 
+
+```{r}
+mean(clinical_info$height, na.rm = TRUE)
+```
+
+Standard Deviation
+
+```{r}
+sd(clinical_info$height, na.rm = TRUE)
+```
+
+Now, using aggregates:
+
+```{r}
+aggregate(clinical_info$cigarettes_per_day,by = list(race = clinical_info$race), na.rm=TRUE,mean)
+```
+
+###  Aggregate
+
+Looking at two different variables using aggregate
+
+```{r}
+aggregate(clinical_info$cigarettes_per_day,by = list(race = clinical_info$race,ethnicity=clinical_info$ethnicity), na.rm=TRUE,mean)
+```
+
+### Another approach using %>%
+```{r}
+clinical_info %>%
+  filter(Sample.Type == "Primary Tumor") %>%
+  group_by(race) %>%
+  summarise(mean(cigarettes_per_day,na.rm=TRUE))
+```
+
+Another verb is summarise
+
+## summarise
+
+```{r}
+summarise(clinical_info$cigarettes_per_day)
+```
+
+
+## Group_by
+
+group_by() is a very useful verb; as the name implies, it allows you to create groups and then, for example, compute descriptive statistics by groups. 
+
+```{r}
+c<-clinical_info %>% group_by(race)
+```
+
+While nothing appears to happen, look at the last line - the power comes when adding functions
+
+
+
+### mutate
+
+```{r}
+clinical_info %>%
+  transmute(years_to_death = exp(days_to_death /365))
+```
+
+          
+          
+## Downloading data and loading it
+
+The commands below will download and create the files in our current path.
+
+Make sure you have done `install.packages` of any missing packages, such as `install.packages('googledrive')`
+
+```{r}
+library(googledrive)
+drive_deauth()
+drive_download("https://drive.google.com/file/d/11ebdJSErJN58THWvlaiu8k7AKiMjHMFL/view?usp=sharing", type = "csv")
+drive_download("https://drive.google.com/file/d/11cxySFxeF3SrJpRxkyP4YOQBn2rsIo-q/view?usp=sharing", type = "csv")
+
+```
+
+## Loading Data into a dataframe
+
+```{r}
+cancer_by_county <- read.csv('cancer_by_county.csv', header=TRUE, sep=",", strip.white=TRUE)
+medicare_by_county <- read.csv('medicare_by_county.csv', header=TRUE, sep=",")
+```
+
+### Inspecting cancer_by_county
+```{r}
+head(cancer_by_county)
+```
+### Inspecting cancer_by_county
+```{r}
+head(medicare_by_county)
+```
+
+
+## Splitting
+
+Split medicare by county "county.name" field into two new fields: "County" and "StateCode", seperating by "_" to give us a column 'StateCode' and 'County'
+
+```{r}
+library(tidyr)
+library(stringr)
+library(dplyr)
+medicare_by_county['StateCode'] <- data.frame(do.call('rbind', strsplit(as.character(medicare_by_county$StateCode_County),'_')))[,1]
+medicare_by_county['County'] <- data.frame(do.call('rbind', strsplit(as.character(medicare_by_county$StateCode_County),'_')))[,2]
+
+```
+
+Lets inspect
+```{r}
+head(medicare_by_county['County'])
+```
+
+Please join the data using DPLYR using an innerjoin
+```{r}
+library(dplyr)
+cancer_medicare_by_county <- inner_join(medicare_by_county, cancer_by_county,"County")
+```
+
+Lets examine the resulting table:
+```{r}
+summary(cancer_medicare_by_county)
+```
+
+
+
+## Problems:
+
+### Problem 1
+
+Please save the joined_data to a file called "cancer_medicare_by_county" as a csv, without using rownames.
+
+```{r}
+# Place your code here.
+write.csv(cancer_medicare_by_county, "CancermodifiedByCounty.csv",row.names = FALSE)
+```
+
+### Problem 2
+
+What is the mean of Hospice.reimbursements.per.enrollee
+
+```{r}
+mean(cancer_medicare_by_county$Hospice.reimbursements.per.enrollee)
+```
+
+### Problem 3
+
+Descriptive statistitics
+
+aggregate(starwars$height,
+          by = list(Species = starwars$species),
+          mean)
+          
+
+```{r}
+states<-aggregate(Hospice.reimbursements.per.enrollee$Hospice.reimbursements.per.enrollee,
+          by = list(Species = Hospice.reimbursements.per.enrollee$StateCode),
+          mean)
+```
+
+
+What is the mean of Medicare.enrollees?
+
+
+
